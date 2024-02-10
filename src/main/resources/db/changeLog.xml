@@ -1,0 +1,60 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext
+    https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd
+    http://www.liquibase.org/xml/ns/dbchangelog
+    https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet author="quarkus" id="1">
+        <createTable tableName="cliente">
+            <column autoIncrement="true" name="id" type="BIGINT" startWith="1">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="limite" type="integer">
+                <constraints nullable="false" />
+            </column>
+            <column name="saldo" type="integer">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        
+        <createTable tableName="transacao">
+            <column name="id_cliente" type="BIGINT">
+                <constraints nullable="false" references="cliente(id)" foreignKeyName="transacao_cliente_id_idx" />
+            </column>
+            <column name="valor" type="integer">
+                <constraints nullable="false"/>
+            </column>
+            <column name="realizada_em" type="timestamp" defaultValue="now()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="tipo" type="varchar(1)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="descricao" type="varchar(10)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="transacao" indexName="id_cliente_idx">
+            <column name="id_cliente" />
+        </createIndex>
+
+        <createIndex tableName="transacao" indexName="realizada_em_idx">
+            <column name="realizada_em" />
+        </createIndex>
+
+        <sql>
+            insert into cliente (id, limite, saldo) values (1, 100000, 0);
+            insert into cliente (id, limite, saldo) values (2, 80000, 0);
+            insert into cliente (id, limite, saldo) values (3, 1000000, 0);
+            insert into cliente (id, limite, saldo) values (4, 10000000, 0);
+            insert into cliente (id, limite, saldo) values (5, 500000, 0);
+
+            ALTER TABLE Cliente ADD CONSTRAINT saldo_limite_check CHECK (saldo > -limite);
+        </sql>
+
+    </changeSet>
+</databaseChangeLog>
