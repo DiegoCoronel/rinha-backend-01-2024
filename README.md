@@ -53,16 +53,6 @@ You can then execute your native executable with: `./target/rinha-2024-1.0-SNAPS
 
 If you want to learn more about building native executables, please consult https://quarkus.io/guides/maven-tooling.
 
-## Related Guides
+## Docs Usadas
 
-- Kotlin ([guide](https://quarkus.io/guides/kotlin)): Write your services in Kotlin
-- Liquibase ([guide](https://quarkus.io/guides/liquibase)): Handle your database schema migrations with Liquibase
-- JDBC Driver - PostgreSQL ([guide](https://quarkus.io/guides/datasource)): Connect to the PostgreSQL database via JDBC
-
-## Provided Code
-
-### RESTEasy JAX-RS
-
-Easily start your RESTful Web Services
-
-[Related guide section...](https://quarkus.io/guides/getting-started#the-jax-rs-resources)
+[Unlogged Table](https://www.crunchydata.com/blog/postgresl-unlogged-tables)
