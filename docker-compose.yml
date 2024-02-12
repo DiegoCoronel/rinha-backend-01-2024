@@ -4,8 +4,6 @@ services:
     container_name: api1
     environment:
       - quarkus.datasource.jdbc.url=jdbc:postgresql://postgres:5432/rinha-de-backend-2024
-      - quarkus.datasource.jdbc.max-size=30
-      - quarkus.datasource.jdbc.min-size=20
     depends_on:
       - postgres
     deploy:
