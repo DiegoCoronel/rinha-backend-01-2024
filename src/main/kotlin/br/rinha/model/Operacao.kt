@@ -8,14 +8,20 @@ data class Operacao(
 
     fun validar() {
         if(descricao == null) {
-            throw OperacaoInvalida("Descrição é obrigatória")
+            throw OperacaoInvalida(DESCRICAO_OBRIGATORIO)
         }
         if(descricao.isBlank() || descricao.length > 10) {
-            throw OperacaoInvalida("Descrição deve ter no máximo 10 caracteres")
+            throw OperacaoInvalida(DESCRICAO_TAMANHO)
         }
         if(valor % 1 != 0.0) {
-            throw OperacaoInvalida("Valor deve ser um número inteiro")
+            throw OperacaoInvalida(VALOR_INTEIRO)
         }
+    }
+
+    companion object {
+        const val DESCRICAO_OBRIGATORIO = "Descrição é obrigatória"
+        const val DESCRICAO_TAMANHO = "Descrição deve ter no máximo 10 caracteres"
+        const val VALOR_INTEIRO = "Valor deve ser um número inteiro"
     }
 
 }

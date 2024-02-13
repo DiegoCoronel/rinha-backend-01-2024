@@ -8,6 +8,7 @@ import br.rinha.model.OperacaoInvalida
 import br.rinha.model.OperacaoRealizada
 import io.smallrye.common.annotation.RunOnVirtualThread
 import jakarta.transaction.Transactional
+import jakarta.ws.rs.Consumes
 import jakarta.ws.rs.GET
 import jakarta.ws.rs.NotFoundException
 import jakarta.ws.rs.POST
@@ -18,9 +19,11 @@ import org.jooq.DSLContext
 import org.jooq.Record2
 import org.jooq.impl.DSL
 import java.time.ZonedDateTime
+import java.util.concurrent.Executors
 
 @Path("/clientes/{id}")
 @Produces("application/json")
+@Consumes("application/json")
 class ClienteResource(
     val dsl: DSLContext
 ) {
@@ -32,11 +35,15 @@ class ClienteResource(
         @PathParam("id") idCliente: Long,
         operacao: Operacao
     ): OperacaoRealizada {
+        if (idCliente <= 0 || idCliente >= 6) {
+            throw NotFoundException(CLIENTE_NAO_ENCONTRADO)
+        }
         operacao.validar()
+
         return when (operacao.tipo) {
-            "c" -> credito(idCliente, operacao)
-            "d" -> debito(idCliente, operacao)
-            else -> throw OperacaoInvalida("Tipo de operação inválida")
+            CREDITO -> credito(idCliente, operacao)
+            DEBITO -> debito(idCliente, operacao)
+            else -> throw OperacaoInvalida(TIPO_OPERACAO_INVALIDA)
         }
     }
 
@@ -44,6 +51,10 @@ class ClienteResource(
     @Path("/extrato")
     @RunOnVirtualThread
     fun extrato(@PathParam("id") idCliente: Long): Extrato {
+        if (idCliente <= 0 || idCliente >= 6) {
+            throw NotFoundException(CLIENTE_NAO_ENCONTRADO)
+        }
+
         return dsl
             .select(
                 CLIENTE.LIMITE,
@@ -59,7 +70,7 @@ class ClienteResource(
                     .where(TRANSACAO.ID_CLIENTE.eq(idCliente))
                     .orderBy(TRANSACAO.REALIZADA_EM.desc())
                     .limit(10)
-                ).`as`("transacoes")
+                ).`as`(TRANSACOES)
             )
             .from(CLIENTE)
             .where(CLIENTE.ID.eq(idCliente))
@@ -69,41 +80,41 @@ class ClienteResource(
                     saldo = Extrato.Saldo(
                         limite = it[CLIENTE.LIMITE],
                         total = it[CLIENTE.SALDO],
-                        dataExtrato = ZonedDateTime.now(),
+                        data_extrato = ZonedDateTime.now(),
                     ),
-                    ultimasTransacoes = (it["transacoes"] as Iterable<org.jooq.Record>).map { t ->
+                    ultimas_transacoes = (it[TRANSACOES] as Iterable<org.jooq.Record>).map { t ->
                         Extrato.Transacao(
                             valor = t[TRANSACAO.VALOR],
                             tipo = t[TRANSACAO.TIPO],
                             descricao = t[TRANSACAO.DESCRICAO],
-                            realizadaEm = t[TRANSACAO.REALIZADA_EM]
+                            realizada_em = t[TRANSACAO.REALIZADA_EM]
                         )
                     }
                 )
-            } ?: throw NotFoundException("Cliente não encontrado")
+            } ?: throw NotFoundException(CLIENTE_NAO_ENCONTRADO)
     }
 
-    private fun credito(idCliente: Long, operacao: Operacao): OperacaoRealizada {
+    private inline fun credito(idCliente: Long, operacao: Operacao): OperacaoRealizada {
         val (limite, saldo) = dsl.update(CLIENTE)
             .set(CLIENTE.SALDO, CLIENTE.SALDO.plus(operacao.valor))
             .where(
                 CLIENTE.ID.eq(idCliente)
             )
             .returningResult(CLIENTE.LIMITE, CLIENTE.SALDO)
-        .fetchOne() as Record2<Int, Int>? ?: throw NotFoundException("Cliente não encontrado")
+        .fetchOne() as Record2<Int, Int>
 
         logarOperacao(idCliente, operacao)
         return OperacaoRealizada(limite,saldo)
     }
 
-    private fun debito(idCliente: Long, operacao: Operacao): OperacaoRealizada {
+    private inline fun debito(idCliente: Long, operacao: Operacao): OperacaoRealizada {
         val (limite, saldo) = dsl.update(CLIENTE)
             .set(CLIENTE.SALDO, CLIENTE.SALDO.minus(operacao.valor))
             .where(
                 CLIENTE.ID.eq(idCliente)
             )
             .returningResult(CLIENTE.LIMITE, CLIENTE.SALDO)
-            .fetchOne() as Record2<Int, Int>? ?: throw NotFoundException("Cliente não encontrado")
+            .fetchOne() as Record2<Int, Int>
 
         logarOperacao(idCliente, operacao)
         return OperacaoRealizada(limite,saldo)
@@ -115,7 +126,15 @@ class ClienteResource(
             .set(TRANSACAO.VALOR, operacao.valor.toInt())
             .set(TRANSACAO.TIPO, operacao.tipo)
             .set(TRANSACAO.DESCRICAO, operacao.descricao)
-        .execute()
+        .executeAsync(Executors.newVirtualThreadPerTaskExecutor())
+    }
+
+    companion object {
+        const val CLIENTE_NAO_ENCONTRADO: String = "Cliente não encontrado"
+        const val TIPO_OPERACAO_INVALIDA: String = "Tipo de operação inválida"
+        const val TRANSACOES: String = "transacoes"
+        const val CREDITO: String = "c"
+        const val DEBITO: String = "d"
     }
 
 }
