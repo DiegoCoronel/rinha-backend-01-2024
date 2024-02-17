@@ -2,10 +2,7 @@ package br.rinha.resource
 
 import br.rinha.meta.Tables.TRANSACAO
 import br.rinha.meta.tables.Cliente.CLIENTE
-import br.rinha.model.Extrato
-import br.rinha.model.Operacao
-import br.rinha.model.OperacaoInvalida
-import br.rinha.model.OperacaoRealizada
+import br.rinha.model.*
 import io.smallrye.common.annotation.RunOnVirtualThread
 import jakarta.transaction.Transactional
 import jakarta.ws.rs.Consumes
@@ -20,6 +17,7 @@ import org.jooq.Record2
 import org.jooq.impl.DSL
 import java.time.ZonedDateTime
 import java.util.concurrent.Executors
+
 
 @Path("/clientes/{id}")
 @Produces("application/json")
@@ -41,8 +39,7 @@ class ClienteResource(
         operacao.validar()
 
         return when (operacao.tipo) {
-            CREDITO -> credito(idCliente, operacao)
-            DEBITO -> debito(idCliente, operacao)
+            CREDITO, DEBITO -> operacao(idCliente, operacao)
             else -> throw OperacaoInvalida(TIPO_OPERACAO_INVALIDA)
         }
     }
@@ -94,22 +91,15 @@ class ClienteResource(
             } ?: throw NotFoundException(CLIENTE_NAO_ENCONTRADO)
     }
 
-    private inline fun credito(idCliente: Long, operacao: Operacao): OperacaoRealizada {
+    private inline fun operacao(idCliente: Long, operacao: Operacao): OperacaoRealizada {
+        dsl.resultQuery("SELECT pg_advisory_xact_lock(${idCliente});").fetchOne()
+
         val (limite, saldo) = dsl.update(CLIENTE)
-            .set(CLIENTE.SALDO, CLIENTE.SALDO.plus(operacao.valor))
-            .where(
-                CLIENTE.ID.eq(idCliente)
+            .set(
+                CLIENTE.SALDO,
+                if (operacao.tipo == CREDITO) CLIENTE.SALDO.plus(operacao.valor)
+                else CLIENTE.SALDO.minus(operacao.valor)
             )
-            .returningResult(CLIENTE.LIMITE, CLIENTE.SALDO)
-        .fetchOne() as Record2<Int, Int>
-
-        logarOperacao(idCliente, operacao)
-        return OperacaoRealizada(limite,saldo)
-    }
-
-    private inline fun debito(idCliente: Long, operacao: Operacao): OperacaoRealizada {
-        val (limite, saldo) = dsl.update(CLIENTE)
-            .set(CLIENTE.SALDO, CLIENTE.SALDO.minus(operacao.valor))
             .where(
                 CLIENTE.ID.eq(idCliente)
             )

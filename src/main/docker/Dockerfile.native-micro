@@ -10,11 +10,11 @@
 #
 # Then, build the image with:
 #
-# docker build -f src/main/docker/Dockerfile.native-micro -t diegocoronel/diego-coronel:rinha-backend-01-2024-T2 .
+# docker build -f src/main/docker/Dockerfile.native-micro -t diegocoronel/diego-coronel:rinha-backend-01-2024-T3 .
 #
 # Then run the container using:
 #
-# docker run -i --rm -p 8080:8080 diegocoronel/diego-coronel:rinha-backend-01-2024-T2
+# docker run -i --rm -p 8080:8080 diegocoronel/diego-coronel:rinha-backend-01-2024-T3
 #
 ###
 FROM ubuntu:23.10
