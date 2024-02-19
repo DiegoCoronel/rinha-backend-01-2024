@@ -10,7 +10,7 @@
 #
 # Then, build the image with:
 #
-# docker build -f src/main/docker/Dockerfile.native-micro -t diegocoronel/diego-coronel:rinha-backend-01-2024-T3 .
+# docker build -f src/main/docker/Dockerfile.native-micro -t diegocoronel/diego-coronel:rinha-backend-01-2024-T4 .
 #
 # Then run the container using:
 #
