@@ -28,7 +28,6 @@ class ClienteResource(
 
     @POST @Transactional
     @Path("/transacoes")
-    @RunOnVirtualThread
     fun novaTransacao(
         @PathParam("id") idCliente: Long,
         operacao: Operacao
